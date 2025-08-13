@@ -2,10 +2,8 @@
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
 
-    // Set up router
     const router = useRouter();
 
-    // Props with default values
     const props = defineProps({
         projectName: {
             type: String,
@@ -94,7 +92,7 @@
             message.value = 'Please enter a valid email.'
             return;
         }
-}
+    }
 </script>
 
 <template>

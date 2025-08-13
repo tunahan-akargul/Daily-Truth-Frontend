@@ -18,8 +18,103 @@
         router.push('/');
     };
 
+    const handleSignInClick = () => {
+        router.push('/main');
+    };
+
     const email = ref('');
     const password = ref('');
+    const message = ref('\u00A0');
+    async function checkEmailExists(email) {
+        try {
+            const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            return data.exists;
+        } catch (error) {
+            console.error('Error checking email:', error);
+            return false;
+        }
+    }
+
+    async function signIn (){
+
+        const exists = await checkEmailExists(email.value);
+        if (!exists) {
+            message.value = 'This email is not registered.';
+            return;
+        }
+
+        if(email.value === '' || password.value === ''){
+            message.value = 'Please fill in all fields.';
+            return;
+        }
+
+        if (password.value.length < 8){
+            message.value = 'Password must be at least 8 characters long.';
+            return;
+        }
+
+        if(email.value.includes('@gmail.com') === true){
+
+            try{
+                const payload = {
+                    email: email.value,
+                    password: password.value
+                }
+
+                const response = await fetch('/api/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.passwordControl === true){
+                        router.push('/main');
+                        return;
+                    } else {
+                        message.value = 'Password is incorrect.';
+                        return; 
+                    }
+                } else {
+                    console.log("Sign in failed");
+                    console.error('Sign in failed:', response.status, response.statusText);
+
+                    if (response.status === 401) {
+                        message.value = 'Password is incorrect.';
+                    } else {
+                        // Try to get error message from response for other errors
+                        let errorMessage = 'Please try again.';
+                        try {
+                            const errorText = await response.text();
+                            if (errorText) {
+                                errorMessage = errorText;
+                            }
+                        } catch (e) {
+                        }
+                        message.value = `Sign in failed: ${errorMessage}`;
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('Error signing in:', error);
+
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    message.value = 'Unable to connect to server. Please check your connection and try again.';
+                } else {
+                    message.value = 'Sign in failed. Please try again.';
+                }
+            }
+        }else{
+            message.value = 'Please enter a valid email.'
+            return;
+        }
+    }
 </script>
 
 <template>
@@ -57,12 +152,18 @@
             v-model="password"
             hide-details
         ></v-text-field>
+        <v-alert 
+            class="text-center text-h6 pa-0"
+            variant="text"
+            color="error"
+        >{{ message }}</v-alert>
     </div>
     <div>
         <v-btn 
             color="primary" 
             variant="outlined" 
             class="buttons rounded-pill my-4 py-4"
+            @click="signIn"
         >
             <v-icon class="mr-4" left>mdi-login</v-icon>
             SIGN IN
