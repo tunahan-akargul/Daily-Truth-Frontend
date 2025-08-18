@@ -75,13 +75,14 @@
                     surname.value = '';
                     email.value = '';
                     password.value = '';
+                    router.push('/signin');
+                    return;
                 } else {
                     console.error('Sign up failed:', response.status, response.statusText);
                     message.value = `Sign up failed: ${response.statusText || 'Please try again.'}`;
                 }
             } catch (error) {
                 console.error('Error signing up:', error);
-                // Check if it's a network error
                 if (error.name === 'TypeError' && error.message.includes('fetch')) {
                     message.value = 'Unable to connect to server. Please check your connection and try again.';
                 } else {

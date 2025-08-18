@@ -43,8 +43,19 @@ h1 {
   }
 }
 
+.custom-tooltip .v-overlay__content {
+  background-color: #ffb74d !important;
+  color: #000000 !important;
+  border-radius: 10px;
+  opacity: 0.9;
+}
+
 .text-primary {
     color: #ff9800 !important; /* Your primary color from main.js */
+}
+
+.text-secondary {
+    color: #ffb74d !important; /* Your secondary color from main.js */
 }
 
 // Custom text utilities (inspired by Bootstrap but without dependencies)

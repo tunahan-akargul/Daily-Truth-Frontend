@@ -18,20 +18,16 @@
         router.push('/');
     };
 
-    const handleSignInClick = () => {
-        router.push('/main');
-    };
-
     const email = ref('');
     const password = ref('');
     const message = ref('\u00A0');
     async function checkEmailExists(email) {
         try {
-            const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+            const response = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const data = await res.json();
+            const data = await response.json();
             return data.exists;
         } catch (error) {
             console.error('Error checking email:', error);
@@ -75,7 +71,12 @@
                     const data = await response.json();
                     
                     if (data.passwordControl === true){
-                        router.push('/main');
+                        router.push({
+                            path: '/main',
+                            query: {
+                                email: email.value
+                            }
+                        });
                         return;
                     } else {
                         message.value = 'Password is incorrect.';
@@ -88,7 +89,6 @@
                     if (response.status === 401) {
                         message.value = 'Password is incorrect.';
                     } else {
-                        // Try to get error message from response for other errors
                         let errorMessage = 'Please try again.';
                         try {
                             const errorText = await response.text();
