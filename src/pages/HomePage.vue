@@ -88,7 +88,7 @@
         />
         <span class="bracket">]&nbsp;</span>
         </span>
-        <span> yeas that my thik than the internet.</span>
+        <span>yeas that my thik than the internet.</span>
     </div>
     <div class="text-center">
         <v-alert 
@@ -186,7 +186,7 @@
         animation: goneAnimation 0.5s linear forwards;
     }
     .showAnimation{
-        animation: comeAnimation 2s linear 1s both;
+        animation: comeAnimation 1.5s linear 1s both;
     }
     .titleSlideAnimation{
         animation: titleSlideAnimation 1s ease-in-out forwards;
