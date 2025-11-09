@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -12,128 +12,117 @@ const responseTitle = ref(null)
 const question = ref(null)
 const sendButton = ref(null)
 const responseWord = ref('')
-const responeInputValue = ref('')
+const responseInputValue = ref('')
 const errorMessage = ref('')
 const sendIcon = ref('mdi-send')
-const success = ref('')
+const isSent = ref(false)
+
+const buttonColor = computed(() => {
+    if (isSent.value) return 'success'
+    if (lockIcon.value === 'mdi-lock-open') return 'primary'
+    return ''
+})
+
+const applyAnimation = (element, animationClass, additionalClasses = []) => {
+    if (!element) return
+    
+    element.classList.remove('goneAnimation', 'showAnimation', 'titleSlideAnimation', 'titleGoneAnimation', 'titleComeAnimation')
+    void element.offsetWidth
+    element.classList.add(animationClass, ...additionalClasses)
+}
 
 const handleOpenQuestion = () => {
     lockIcon.value = 'mdi-lock-open'
+    
     const btnEl = lockButton.value?.$el
-    if (btnEl) {
-        btnEl.classList.remove('goneAnimation')
-        void btnEl.offsetWidth
-        btnEl.classList.add('goneAnimation', 'pointer-events-none')
-    }
-
-    const titleEl = welcomeTitle.value
-    if (titleEl) {
-        titleEl.classList.remove('titleSlideAnimation')
-        void titleEl.offsetWidth
-        titleEl.classList.add('titleSlideAnimation')
-    }
-
+    applyAnimation(btnEl, 'goneAnimation', ['pointer-events-none'])
+    
+    applyAnimation(welcomeTitle.value, 'titleSlideAnimation')
+    
     const questionEl = question.value
     if (questionEl) {
         questionEl.classList.remove('opacity-0', 'pointer-events-none')
-        void questionEl.offsetWidth
-        questionEl.classList.add('showAnimation', 'pointer-events-auto')
+        applyAnimation(questionEl, 'showAnimation', ['pointer-events-auto'])
     }
-
+    
     const sendBtnEl = sendButton.value?.$el
     if (sendBtnEl) {
         sendBtnEl.classList.remove('opacity-0', 'pointer-events-none')
-        void sendBtnEl.offsetWidth
-        sendBtnEl.classList.add('showAnimation', 'pointer-events-auto')
+        applyAnimation(sendBtnEl, 'showAnimation', ['pointer-events-auto'])
     }
-    success.value = 'primary'
 }
 
 const handleSendQuestion = async () => {
-    console.log(responeInputValue.value)
-    if (responeInputValue.value.trim() === '' || responeInputValue.value.trim() === null || responeInputValue.value.trim() === undefined) {
+    const trimmedValue = responseInputValue.value.trim()
+    
+    if (!trimmedValue) {
         errorMessage.value = 'Please enter a word.'
-    } else {
-        try {
-            const response = await fetch(`/api/post-word`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: responeInputValue.value })
-            });
-            if (response.ok) {
-                await successMovements()
-                return;
+        return
+    }
+    
+    try {
+        const response = await fetch(`/api/post-word`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: trimmedValue })
+        });
+        
+        if (response.ok) {
+            await successMovements()
+        } else {
+            const errorData = await response.json().catch(() => null);
+            
+            if (errorData?.message) {
+                errorMessage.value = `Error: ${errorData.message}`
+            } else if (response.status === 400) {
+                errorMessage.value = 'Bad Request: Check the data format or required fields.'
             } else {
-                // Get the error details from the response
-                const errorData = await response.json().catch(() => null);
-                console.error('Send failed:', response.status, response.statusText, errorData);
-                
-                // Display more detailed error message
-                if (errorData && errorData.message) {
-                    errorMessage.value = `Error: ${errorData.message}`
-                } else if (response.status === 400) {
-                    errorMessage.value = 'Bad Request: Check the data format or required fields.'
-                } else {
-                    errorMessage.value = `Send failed (${response.status}): ${response.statusText || 'Please try again.'}`
-                }
+                errorMessage.value = `Send failed (${response.status}): ${response.statusText || 'Please try again.'}`
             }
-        } catch (error) {
-            console.error('Error signing up:', error);
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                errorMessage.value = 'Unable to connect to server. Please check your connection and try again.'
-            } else {
-                errorMessage.value = 'Send request failed. Please try again.'
-            }
+        }
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage.value = 'Unable to connect to server. Please check your connection and try again.'
+        } else {
+            errorMessage.value = 'Send request failed. Please try again.'
         }
     }
 }
 
 const handleGetResponse = async () => {
-    const response = await fetch(`/api/get-word/${new Date().toISOString()}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-    });
-    if (response.ok) {
-        const data = await response.json();
-        if (data.word) {
-            return data.word;
-        } else {
-            console.log('No word found')
-            console.log(`${new Date().toISOString()}`)
-            return 'Trying to get word...';
-        }
-    } else {
-        console.log(`${new Date().toISOString()}`)
+    try {
+        const response = await fetch(`/api/get-word/${new Date().toISOString().split('T')[0]}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-        return 'Trying to get word...';
+        if (response.ok) {
+            const data = await response.json();
+            return data.text.charAt(0).toUpperCase() + data.text.slice(1).toLowerCase() || 'Trying to get word...';
+        } else {
+            return 'Trying to get word...'
+        }
+    } catch (error) {
+        return 'Unable to load word...'
     }
 }
 
 const successMovements = async () => {
-    console.log("The post is successful")
     errorMessage.value = ''
-    responeInputValue.value = ''
+    responseInputValue.value = ''
     sendIcon.value = 'mdi-check'
-    success.value = 'success'
+    isSent.value = true
     
-    // Fetch the response word
     responseWord.value = await handleGetResponse()
     
     setTimeout(() => {
         const btnEl = sendButton.value?.$el
-        btnEl.classList.remove('showAnimation')
-        void btnEl.offsetWidth
-        btnEl.classList.add('goneAnimation', 'pointer-events-none')
-        question.value.classList.remove('showAnimation')
-        void question.value.offsetWidth
-        question.value.classList.add('goneAnimation', 'pointer-events-none')
-        welcomeTitle.value.classList.remove('titleSlideAnimation')
-        void welcomeTitle.value.offsetWidth
-        welcomeTitle.value.classList.add('titleGoneAnimation')
+        applyAnimation(btnEl, 'goneAnimation', ['pointer-events-none'])
+        applyAnimation(question.value, 'goneAnimation', ['pointer-events-none'])
+        applyAnimation(welcomeTitle.value, 'titleGoneAnimation')
 
         setTimeout(() => {
-            responseTitle.value.classList.add('titleComeAnimation')
-            console.log('The response title is coming')
+            applyAnimation(responseTitle.value, 'titleComeAnimation')
         }, 1000);
     }, 1000);
 }
@@ -159,7 +148,7 @@ const successMovements = async () => {
             <span class="d-inline-flex align-center">
                 <span class="bracket">&nbsp;[</span>
                 <v-text-field class="mx-2 wordInput" variant="underlined" color="primary" density="compact"
-                    min-width="180" v-model="responeInputValue" hide-details />
+                    min-width="180" v-model="responseInputValue" hide-details />
                 <span class="bracket">]&nbsp;</span>
             </span>
             <span>yeas that my thik than the internet.</span>
@@ -170,11 +159,11 @@ const successMovements = async () => {
             </v-alert>
         </div>
         <div>
-            <v-btn :color="success" variant="flat"
-                :class="['buttons', 'rounded-pill', 'my-4', 'py-6', 'px-10', success ? 'showAnimation' : 'opacity-0 pointer-events-none']"
+            <v-btn :color="buttonColor" variant="flat"
+                :class="['buttons', 'rounded-pill', 'my-4', 'py-6', 'px-10', buttonColor ? 'showAnimation' : 'opacity-0 pointer-events-none']"
                 @click="handleSendQuestion" ref="sendButton" width="250">
                 <v-icon size="small" class="mr-2">{{ sendIcon }}</v-icon>
-                {{ success === 'primary' ? 'SEND' : 'SENT!' }}
+                {{ isSent ? 'SENT!' : 'SEND' }}
             </v-btn>
         </div>
     </div>
@@ -193,7 +182,7 @@ const successMovements = async () => {
         </a>
         <div class="d-inline-flex align-center justify-center gap-3">
             <span>© 2025</span>
-            <img class="d-inline-block" style="max-width: 100px;" src="/public/TheThidayLogo.png"></img>
+            <img class="d-inline-block" style="max-width: 100px;" src="/TheThidayLogo.png"></img>
             <span>- thiday.com</span>
         </div>
         <a href="https://github.com/tunahan-akargul" target="_blank" rel="noopener noreferrer">
@@ -205,13 +194,6 @@ const successMovements = async () => {
 </template>
 
 <style scoped>
-.topSide {
-    position: absolute;
-    top: 100px;
-    left: 30%;
-
-}
-
 .buttons {
     height: auto;
     font-size: 2rem;
