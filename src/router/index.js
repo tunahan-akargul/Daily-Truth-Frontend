@@ -3,6 +3,7 @@ import HomePage from '../pages/HomePage.vue'
 import SignInPage from '../pages/SignInPage.vue'
 import SignUpPage from '../pages/SignUpPage.vue'
 import MainPage from '../pages/MainPage.vue'
+import TopWordsPage from '../pages/TopWordsPage.vue'
 const routes = [
   {
     path: '/',
@@ -23,6 +24,11 @@ const routes = [
     path: '/main',
     name: 'Main',
     component: MainPage
+  },
+  {
+    path: '/top',
+    name: 'TopWords',
+    component: TopWordsPage
   }
 ]
 

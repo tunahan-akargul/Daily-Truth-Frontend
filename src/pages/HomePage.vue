@@ -4,11 +4,11 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const projectName = 'ThiDay';
-const lockIcon = ref('mdi-lock');
+const projectName = 'ThiDay'
+const lockIcon = ref('mdi-lock')
+const clockIcon = ref('mdi-clock')
 const lockButton = ref(null)
 const welcomeTitle = ref(null)
-const responseTitle = ref(null)
 const question = ref(null)
 const sendButton = ref(null)
 const responseWord = ref('')
@@ -16,6 +16,15 @@ const responseInputValue = ref('')
 const errorMessage = ref('')
 const sendIcon = ref('mdi-send')
 const isSent = ref(false)
+const alreadyResponse = ref(false)
+
+onMounted(async () => {
+    responseWord.value = await handleGetResponse()
+    if (responseWord.value != 'Not found any word' && responseWord.value != 'Unable to load word...') {
+        alreadyResponse.value = true
+        router.push("")
+    }
+})
 
 const buttonColor = computed(() => {
     if (isSent.value) return 'success'
@@ -99,7 +108,10 @@ const handleGetResponse = async () => {
         if (response.ok) {
             const data = await response.json();
             return data.text.charAt(0).toUpperCase() + data.text.slice(1).toLowerCase() || 'Trying to get word...';
-        } else {
+        } else if (response.status == "404") {
+            return 'Not found any word'
+        }
+        else {
             return 'Trying to get word...'
         }
     } catch (error) {
@@ -122,7 +134,7 @@ const successMovements = async () => {
         applyAnimation(welcomeTitle.value, 'titleGoneAnimation')
 
         setTimeout(() => {
-            applyAnimation(responseTitle.value, 'titleComeAnimation')
+            router.push('/top')
         }, 1000);
     }, 1000);
 }
@@ -136,11 +148,18 @@ const successMovements = async () => {
                 <h2 class="secondary-font">Response a Question Thi Day</h2>
             </div>
         </div>
-        <div style="position: absolute; left: 50%; transform: translateX(-50%); top: 50%; width: 100%;">
-            <v-btn color="secondary" variant="tonal" class="buttons rounded-pill my-4 py-6 px-10"
+        <div v-if="!alreadyResponse" style="position: absolute; left: 50%; transform: translateX(-50%); top: 50%; width: 100%;">
+            <v-btn  color="secondary" variant="tonal" class="buttons rounded-pill my-4 py-6 px-10"
                 @click="handleOpenQuestion" ref="lockButton">
                 <v-icon size="small" class="mr-2">{{ lockIcon }}</v-icon>
                 Open Today's Question
+            </v-btn>
+        </div>
+        <div v-if="alreadyResponse" style="position: absolute; left: 50%; transform: translateX(-50%); top: 50%; width: 100%;">
+            <v-btn  color="secondary" variant="tonal" class="buttons rounded-pill my-4 py-6 px-10"
+                @click="router.push('/top')" ref="lockButton">
+                <v-icon size="small" class="mr-2">{{ clockIcon }}</v-icon>
+                You're early! Look at the other responses.
             </v-btn>
         </div>
         <div class="mt-8 mb-1 fs-1 opacity-0 pointer-events-none" ref="question">
@@ -168,12 +187,7 @@ const successMovements = async () => {
         </div>
     </div>
 
-    <div>
-        <div ref="responseTitle" style="position: absolute; left: 50%; transform: translateX(-50%); top: -120px; width: 100%;">
-            <H1>Your response is <span class="specialTitle"> {{ responseWord }} </span></H1>
-            <h2 class="secondary-font">Look the other ones responses.</h2>
-        </div>
-    </div>
+    
     <div class="footer">
         <a href="https://www.linkedin.com/in/tunahan-akargul/" target="_blank" rel="noopener noreferrer">
             <v-avatar color="primary" variant="elevated" rounded="circle" size="48" class="mr-4">
